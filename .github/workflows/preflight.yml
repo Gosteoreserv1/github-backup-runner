@@ -1,0 +1,24 @@
+name: Read-only access and notification test
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preflight:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - run: python3 preflight.py
+        env:
+          PRIMARY_TOKEN: ${{ secrets.PRIMARY_TOKEN }}
+          PRIMARY_METADATA_TOKEN: ${{ secrets.PRIMARY_METADATA_TOKEN }}
+          BACKUP_TOKEN: ${{ secrets.BACKUP_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          BACKUP_ALERT_FROM: ${{ secrets.BACKUP_ALERT_FROM }}
+          BACKUP_ALERT_EMAIL: ${{ secrets.BACKUP_ALERT_EMAIL }}
