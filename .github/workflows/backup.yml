@@ -1,0 +1,36 @@
+name: Private backup execution
+on:
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: Repository name; empty reconciles entire account
+        type: string
+        required: false
+  schedule:
+    - cron: '41 3 * * *'
+permissions:
+  contents: read
+concurrency:
+  group: private-backup-controller
+  cancel-in-progress: false
+jobs:
+  backup:
+    if: vars.BACKUP_RUNNER_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Execute pinned private controller
+        env:
+          PRIMARY_TOKEN: ${{ secrets.PRIMARY_TOKEN }}
+          PRIMARY_METADATA_TOKEN: ${{ secrets.PRIMARY_METADATA_TOKEN }}
+          BACKUP_TOKEN: ${{ secrets.BACKUP_TOKEN }}
+          TARGET_REPOSITORY: ${{ inputs.repository }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          BACKUP_ALERT_FROM: ${{ secrets.BACKUP_ALERT_FROM }}
+          BACKUP_ALERT_EMAIL: ${{ secrets.BACKUP_ALERT_EMAIL }}
+        run: python3 run_backup.py
