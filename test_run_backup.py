@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from run_backup import configuration, execute, REVISION
+from run_backup import configuration, execute, verify_archived_commit, REVISION
 
 
 class RunnerTests(unittest.TestCase):
@@ -21,6 +21,21 @@ class RunnerTests(unittest.TestCase):
     def test_invalid_delivery_rejected(self):
         with self.assertRaises(ValueError):
             configuration(dict(self.env, DELIVERY_ID='bad/id'))
+
+    def test_invalid_event_sha_rejected(self):
+        with self.assertRaises(ValueError):
+            configuration(dict(self.env, EXPECTED_SHA='not-a-sha'))
+
+    def test_event_commit_requires_a_snapshot_ref(self):
+        with tempfile.TemporaryDirectory() as temp:
+            env = configuration(dict(self.env, TARGET_REPOSITORY='fixture'))
+            def fake(args, **kwargs):
+                return SimpleNamespace(returncode=0, stdout=b'')
+            with self.assertRaises(RuntimeError):
+                verify_archived_commit(env, 'a' * 40, Path(temp), None, fake)
+            def protected(args, **kwargs):
+                return SimpleNamespace(returncode=0, stdout=b'refs/heads/snapshots/test/main\n')
+            verify_archived_commit(env, 'a' * 40, Path(temp), None, protected)
 
     def test_success_uses_pinned_private_code_and_saves_status(self):
         calls = []

@@ -24,6 +24,9 @@ def configuration(env):
     delivery = env.get('DELIVERY_ID', '')
     if delivery and not re.fullmatch(r'[A-Za-z0-9-]{1,100}', delivery):
         raise ValueError('Invalid delivery ID')
+    sha = env.get('EXPECTED_SHA', '')
+    if sha and not re.fullmatch(r'[0-9a-f]{40}', sha):
+        raise ValueError('Invalid expected SHA')
     result = dict(env)
     auth = base64.b64encode(('x-access-token:' + env['BACKUP_TOKEN']).encode()).decode()
     result.update(GIT_CONFIG_COUNT='1',
@@ -61,8 +64,27 @@ def execute(env, command=subprocess.run):
             elif changed != 0:
                 raise RuntimeError('Private status verification failed')
             if result == 0 and env.get('DELIVERY_ID'):
+                expected = env.get('EXPECTED_SHA', '')
+                if expected:
+                    verify_archived_commit(configured, expected, root, log, command)
                 receipt(env)
             return result
+
+
+def verify_archived_commit(env, sha, root, log, command=subprocess.run):
+    """An event SHA must be reachable from a persistent snapshot ref."""
+    repository = env['TARGET_REPOSITORY']
+    snapshot = root / 'snapshot-proof.git'
+    result = command(['git', 'clone', '--mirror', '--filter=blob:none',
+        f'https://github.com/Gosteoreserv1/{repository}--snapshots.git', str(snapshot)],
+        env=env, stdout=log, stderr=subprocess.STDOUT, timeout=900)
+    if result.returncode:
+        raise RuntimeError('Snapshot proof unavailable')
+    result = command(['git', '-C', str(snapshot), 'for-each-ref', '--contains=' + sha,
+        '--format=%(refname)', 'refs/heads/snapshots/', 'refs/tags/snapshots/'],
+        env=env, stdout=subprocess.PIPE, stderr=log, timeout=300)
+    if result.returncode or not result.stdout.strip():
+        raise RuntimeError('Event commit is not protected by a snapshot')
 
 
 def receipt(env):
@@ -72,6 +94,7 @@ def receipt(env):
         raise RuntimeError('Journal callback credentials missing')
     body = json.dumps({'delivery': env['DELIVERY_ID'],
                       'repository': env['TARGET_REPOSITORY'],
+                      'sourceSha': env.get('EXPECTED_SHA', ''),
                       'runId': env['GITHUB_RUN_ID'], 'verified': True}).encode()
     signature = 'sha256=' + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
     request = urllib.request.Request(

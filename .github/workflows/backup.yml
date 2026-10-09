@@ -10,6 +10,10 @@ on:
         description: Durable webhook task identifier
         type: string
         required: false
+      source_sha:
+        description: Event commit SHA to verify in recovery snapshots
+        type: string
+        required: false
   schedule:
     - cron: '41 3 * * *'
 permissions:
@@ -33,6 +37,7 @@ jobs:
           BACKUP_TOKEN: ${{ secrets.BACKUP_TOKEN }}
           TARGET_REPOSITORY: ${{ inputs.repository }}
           DELIVERY_ID: ${{ inputs.delivery_id }}
+          EXPECTED_SHA: ${{ inputs.source_sha }}
           BACKUP_CALLBACK_SECRET: ${{ secrets.BACKUP_CALLBACK_SECRET }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}

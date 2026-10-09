@@ -39,3 +39,18 @@ or independent heartbeat watchdog has been activated yet. Notifications from thi
 wrapper cannot report a job which never starts; the independent watchdog is needed.
 Git backup retries are supplied by the pinned controller, not by copying all data
 again in an outer retry loop. Allow GitHub metadata coverage gaps to remain explicit.
+
+## Durable event verification (not deployed yet)
+
+The worker integration passes delivery_id and source_sha. The runner checks that
+the source SHA is reachable from a snapshot branch/tag before sending its signed
+receipt. Missing event commits keep the task unresolved even when newer history
+was copied successfully. Deletion events verify the deleted branch's previous SHA.
+Repository metadata-only events do not have a commit SHA.
+
+BACKUP_CALLBACK_SECRET must be a separate matching secret in runner and worker.
+Worker D1 schema and JOURNAL binding must be installed before enabling this path.
+Do not route events to the public runner while it is disabled or unconfigured.
+Cloudflare scheduled replay and GitHub daily reconciliation are complementary.
+This still cannot recover an uncaptured SHA after it disappears from GitHub;
+source branch protections and early capture are required to limit that risk.
