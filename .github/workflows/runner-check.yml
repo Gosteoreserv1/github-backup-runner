@@ -1,0 +1,17 @@
+name: Check free runner availability
+on:
+  workflow_dispatch:
+permissions: {}
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Verify tools without accessing private data
+        shell: bash
+        run: |
+          set -euo pipefail
+          git --version
+          git lfs version
+          python3 --version
+          echo 'Public runner available; no backup credentials used.'
