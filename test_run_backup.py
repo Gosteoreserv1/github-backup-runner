@@ -18,6 +18,10 @@ class RunnerTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             configuration(dict(self.env, TARGET_REPOSITORY='repo; echo bad'))
 
+    def test_invalid_delivery_rejected(self):
+        with self.assertRaises(ValueError):
+            configuration(dict(self.env, DELIVERY_ID='bad/id'))
+
     def test_success_uses_pinned_private_code_and_saves_status(self):
         calls = []
         def fake(args, **kwargs):

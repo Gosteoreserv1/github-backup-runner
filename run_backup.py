@@ -7,6 +7,8 @@ import subprocess
 import tempfile
 import urllib.request
 import json
+import hmac
+import hashlib
 
 CONTROLLER = 'https://github.com/Gosteoreserv1/github-account-backup.git'
 REVISION = '5b6fac1e9eebc42aabb6135c3c084a8afe5e9803'
@@ -19,6 +21,9 @@ def configuration(env):
     target = env.get('TARGET_REPOSITORY', '')
     if target and not re.fullmatch(r'[A-Za-z0-9_.-]{1,100}', target):
         raise ValueError('Invalid repository name')
+    delivery = env.get('DELIVERY_ID', '')
+    if delivery and not re.fullmatch(r'[A-Za-z0-9-]{1,100}', delivery):
+        raise ValueError('Invalid delivery ID')
     result = dict(env)
     auth = base64.b64encode(('x-access-token:' + env['BACKUP_TOKEN']).encode()).decode()
     result.update(GIT_CONFIG_COUNT='1',
@@ -55,7 +60,26 @@ def execute(env, command=subprocess.run):
                 run(['python3', 'scripts/push_controller.py'], checkout)
             elif changed != 0:
                 raise RuntimeError('Private status verification failed')
+            if result == 0 and env.get('DELIVERY_ID'):
+                receipt(env)
             return result
+
+
+def receipt(env):
+    # Never mark a journal event complete before backup + private status push.
+    secret = env.get('BACKUP_CALLBACK_SECRET')
+    if not secret or not env.get('TARGET_REPOSITORY') or not env.get('GITHUB_RUN_ID'):
+        raise RuntimeError('Journal callback credentials missing')
+    body = json.dumps({'delivery': env['DELIVERY_ID'],
+                      'repository': env['TARGET_REPOSITORY'],
+                      'runId': env['GITHUB_RUN_ID'], 'verified': True}).encode()
+    signature = 'sha256=' + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+    request = urllib.request.Request(
+        'https://github-backup-webhook.kurs19992.workers.dev/backup/receipt', body,
+        {'Content-Type': 'application/json', 'x-backup-signature': signature}, method='POST')
+    with urllib.request.urlopen(request, timeout=20) as response:
+        if response.status != 200:
+            raise RuntimeError('Journal callback rejected')
 
 
 def alert(env):

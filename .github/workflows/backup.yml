@@ -6,6 +6,10 @@ on:
         description: Repository name; empty reconciles entire account
         type: string
         required: false
+      delivery_id:
+        description: Durable webhook task identifier
+        type: string
+        required: false
   schedule:
     - cron: '41 3 * * *'
 permissions:
@@ -28,6 +32,8 @@ jobs:
           PRIMARY_METADATA_TOKEN: ${{ secrets.PRIMARY_METADATA_TOKEN }}
           BACKUP_TOKEN: ${{ secrets.BACKUP_TOKEN }}
           TARGET_REPOSITORY: ${{ inputs.repository }}
+          DELIVERY_ID: ${{ inputs.delivery_id }}
+          BACKUP_CALLBACK_SECRET: ${{ secrets.BACKUP_CALLBACK_SECRET }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
