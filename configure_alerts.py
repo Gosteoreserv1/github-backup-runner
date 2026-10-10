@@ -9,17 +9,22 @@ import urllib.request
 def main():
     fields = ('TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID', 'RESEND_API_KEY',
               'BACKUP_ALERT_FROM', 'BACKUP_ALERT_EMAIL')
-    payload = {field: os.environ[field] for field in fields}
+    check = os.environ.get('CHECK_ONLY') == 'true'
+    payload = {} if check else {field: os.environ[field] for field in fields}
     payload['timestamp'] = int(time.time() * 1000)
     body = json.dumps(payload).encode()
     signature = 'sha256=' + hmac.new(os.environ['BACKUP_CALLBACK_SECRET'].strip().encode(), body, hashlib.sha256).hexdigest()
-    request = urllib.request.Request('https://github-backup-webhook.kurs19992.workers.dev/backup/configure-alerts',
+    endpoint = 'check' if check else 'configure-alerts'
+    request = urllib.request.Request('https://github-backup-webhook.kurs19992.workers.dev/backup/' + endpoint,
         body, {'Content-Type': 'application/json', 'User-Agent': 'GOSTEO-backup-runner/1.0',
                'x-backup-signature': signature}, method='POST')
     with urllib.request.urlopen(request, timeout=30) as response:
         if response.status != 200:
             raise RuntimeError()
-    print('Independent notification configuration accepted; no credentials logged')
+        if check:
+            status = json.load(response)
+            print('Independent watchdog healthy: ' + str(status['healthy']))
+    print('Independent watchdog checked' if check else 'Independent notification configuration accepted; no credentials logged')
 
 if __name__ == '__main__':
     try:

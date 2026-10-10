@@ -1,6 +1,11 @@
 name: Configure independent backup alerts
 on:
   workflow_dispatch:
+    inputs:
+      check_only:
+        description: Check independent watchdog and retry durable pending tasks
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -14,6 +19,7 @@ jobs:
           persist-credentials: false
       - run: python3 configure_alerts.py
         env:
+          CHECK_ONLY: ${{ inputs.check_only }}
           BACKUP_CALLBACK_SECRET: ${{ secrets.BACKUP_CALLBACK_SECRET }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
