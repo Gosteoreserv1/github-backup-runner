@@ -27,3 +27,14 @@ not readable through the available Cloudflare OAuth permissions and need owner r
 Initial acceptance is still in progress: inspect the private status controller and
 the active reconciliation run. Isolated event/force-delete/restore tests must pass
 before claiming full end-to-end acceptance. Production Git histories are not test targets.
+
+2026-10-10 acceptance evidence: reconciliation run 38032997797 verified Git for
+19/19 source repositories (18 original plus isolated test), with metadata partial
+only for gosteo-marketplace/projects-v2.json. Automatic push run 38033683046 saved
+unique commit 7af121a; force-rewrite run 38034017517 saved sibling 25fe525;
+branch-delete run 38034279316 succeeded. Old 7af121a and a deleted tag were restored
+from backup snapshots to private backup-e2e-restored-20261010 without reading the
+primary account. Personal Projects access needs a separate PROJECTS_TOKEN with
+read:project scope; do not replace read-only repository credentials with broad
+classic repo write access. Overall metadata acceptance remains incomplete until
+the owner supplies this credential and the exporter is verified with it.
