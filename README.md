@@ -1,4 +1,20 @@
-# GitHub backup runner
+# GOSTEO GitHub backup runner
+
+## Current activation (2026-10-10)
+
+The runner is ENABLED. GitHub App webhooks now route through a persistent
+Cloudflare D1 outbox to backup.yml. Signed receipts require a matching event SHA
+reachable from a recovery snapshot. Busy/failed events stay pending for replay.
+Git/history/branches/tags/LFS are synchronized after pushes. GitHub metadata is
+reconciled daily at 03:41 UTC / 06:41 Moscow. Independent health checks run every
+30 minutes. Telegram/email test delivery is confirmed; alert configuration is
+encrypted at rest. Older private scheduled/event workflows are disabled, not deleted.
+
+Initial all-repository and destructive recovery acceptance is still in progress.
+Enabled automation is not proof of full coverage. Inspect private status and
+coverage.json. See OPERATIONS.md for exclusions, limitations and quota caveats.
+
+## Historical preparation notes (superseded by activation status above)
 
 Public execution controller only. Private repository contents, metadata, status
 ledgers and backups must never be committed here or uploaded to public artifacts.
