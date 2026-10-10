@@ -11,7 +11,7 @@ import hmac
 import hashlib
 
 CONTROLLER = 'https://github.com/Gosteoreserv1/github-account-backup.git'
-REVISION = '276a1eff2dd4ef6e1e6181f47626cad0544c68d7'
+REVISION = '08e6a7566796bdf1c436b304b8d53c597f7c44f9'
 
 
 def configuration(env):
@@ -35,6 +35,9 @@ def configuration(env):
                   GIT_TERMINAL_PROMPT='0', GIT_LFS_SKIP_SMUDGE='1',
                   PRIMARY_OWNER='valeriykurs1992', BACKUP_OWNER='Gosteoreserv1',
                   CREATE_SNAPSHOT='true', MAX_ATTEMPTS='3')
+    # Pushes preserve Git immediately; expensive API metadata reconciliation is
+    # daily (or explicit manual), avoiding hundreds of API calls on every push.
+    result['EXPORT_METADATA'] = 'false' if delivery and sha else 'true'
     return result
 
 
