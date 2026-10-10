@@ -12,7 +12,7 @@ def main():
     payload = {field: os.environ[field] for field in fields}
     payload['timestamp'] = int(time.time() * 1000)
     body = json.dumps(payload).encode()
-    signature = 'sha256=' + hmac.new(os.environ['BACKUP_CALLBACK_SECRET'].encode(), body, hashlib.sha256).hexdigest()
+    signature = 'sha256=' + hmac.new(os.environ['BACKUP_CALLBACK_SECRET'].strip().encode(), body, hashlib.sha256).hexdigest()
     request = urllib.request.Request('https://github-backup-webhook.kurs19992.workers.dev/backup/configure-alerts',
         body, {'Content-Type': 'application/json', 'x-backup-signature': signature}, method='POST')
     with urllib.request.urlopen(request, timeout=30) as response:
@@ -23,6 +23,9 @@ def main():
 if __name__ == '__main__':
     try:
         main()
+    except urllib.error.HTTPError as error:
+        print('Notification configuration rejected; HTTP status ' + str(error.code))
+        raise SystemExit(1)
     except Exception:
         print('Notification configuration failed; private details suppressed')
         raise SystemExit(1)

@@ -89,7 +89,7 @@ def verify_archived_commit(env, sha, root, log, command=subprocess.run):
 
 def receipt(env):
     # Never mark a journal event complete before backup + private status push.
-    secret = env.get('BACKUP_CALLBACK_SECRET')
+    secret = env.get('BACKUP_CALLBACK_SECRET', '').strip()
     if not secret or not env.get('TARGET_REPOSITORY') or not env.get('GITHUB_RUN_ID'):
         raise RuntimeError('Journal callback credentials missing')
     body = json.dumps({'delivery': env['DELIVERY_ID'],
