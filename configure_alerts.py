@@ -14,7 +14,8 @@ def main():
     body = json.dumps(payload).encode()
     signature = 'sha256=' + hmac.new(os.environ['BACKUP_CALLBACK_SECRET'].strip().encode(), body, hashlib.sha256).hexdigest()
     request = urllib.request.Request('https://github-backup-webhook.kurs19992.workers.dev/backup/configure-alerts',
-        body, {'Content-Type': 'application/json', 'x-backup-signature': signature}, method='POST')
+        body, {'Content-Type': 'application/json', 'User-Agent': 'GOSTEO-backup-runner/1.0',
+               'x-backup-signature': signature}, method='POST')
     with urllib.request.urlopen(request, timeout=30) as response:
         if response.status != 200:
             raise RuntimeError()

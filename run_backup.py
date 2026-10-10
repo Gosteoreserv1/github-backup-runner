@@ -99,7 +99,8 @@ def receipt(env):
     signature = 'sha256=' + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
     request = urllib.request.Request(
         'https://github-backup-webhook.kurs19992.workers.dev/backup/receipt', body,
-        {'Content-Type': 'application/json', 'x-backup-signature': signature}, method='POST')
+        {'Content-Type': 'application/json', 'User-Agent': 'GOSTEO-backup-runner/1.0',
+         'x-backup-signature': signature}, method='POST')
     with urllib.request.urlopen(request, timeout=20) as response:
         if response.status != 200:
             raise RuntimeError('Journal callback rejected')
