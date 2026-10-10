@@ -26,6 +26,12 @@ class RunnerTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             configuration(dict(self.env, EXPECTED_SHA='not-a-sha'))
 
+    def test_push_and_daily_metadata_freshness_are_separate(self):
+        self.assertEqual(configuration(self.env)['EXPORT_METADATA'], 'true')
+        push = dict(self.env, DELIVERY_ID='fixture', EXPECTED_SHA='a' * 40)
+        self.assertEqual(configuration(push)['EXPORT_METADATA'], 'false')
+        self.assertEqual(configuration(push)['CREATE_SNAPSHOT'], 'true')
+
     def test_event_commit_requires_a_snapshot_ref(self):
         with tempfile.TemporaryDirectory() as temp:
             env = configuration(dict(self.env, TARGET_REPOSITORY='fixture'))
