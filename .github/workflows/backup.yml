@@ -23,7 +23,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   backup:
-    if: vars.BACKUP_RUNNER_ENABLED == 'true'
+    if: vars.BACKUP_RUNNER_ENABLED == 'true' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
