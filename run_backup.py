@@ -11,7 +11,7 @@ import hmac
 import hashlib
 
 CONTROLLER = 'https://github.com/Gosteoreserv1/github-account-backup.git'
-REVISION = 'a0f626483e9bff201b821729739e6f0e11dd8ee3'
+REVISION = '276a1eff2dd4ef6e1e6181f47626cad0544c68d7'
 
 
 def configuration(env):
