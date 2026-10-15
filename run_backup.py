@@ -13,7 +13,7 @@ import time
 import urllib.error
 
 CONTROLLER = 'https://github.com/Gosteoreserv1/github-account-backup.git'
-REVISION = '191b79fd04ad17c9cfdcc505c80e7b81ddc9e7ef'
+REVISION = 'b1eeeff526ca2f06615b7d8e2da62e29d3973416'
 
 
 def configuration(env):
@@ -58,6 +58,9 @@ def execute(env, command=subprocess.run):
                 return result.returncode
             run(['git', 'clone', '--no-checkout', CONTROLLER, str(checkout)])
             run(['git', 'checkout', '--detach', REVISION], checkout)
+            # Pin executable code, not mutable backup state. Starting from old
+            # status would forget recent repositories and successful receipts.
+            run(['git', 'restore', '--source=origin/main', '--worktree', '--', 'metadata', 'status'], checkout)
             result = run(['python3', 'scripts/backup.py'], checkout, check=False)
             run(['git', 'config', 'user.name', 'github-backup-bot'], checkout)
             run(['git', 'config', 'user.email', 'github-backup-bot@users.noreply.github.com'], checkout)

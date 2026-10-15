@@ -57,6 +57,7 @@ class RunnerTests(unittest.TestCase):
             return SimpleNamespace(returncode=code)
         self.assertEqual(execute(self.env, fake), 0)
         self.assertIn(['git', 'checkout', '--detach', REVISION], calls)
+        self.assertIn(['git', 'restore', '--source=origin/main', '--worktree', '--', 'metadata', 'status'], calls)
         self.assertIn(['python3', 'scripts/push_controller.py'], calls)
 
     def test_backup_failure_still_persists_private_status(self):
