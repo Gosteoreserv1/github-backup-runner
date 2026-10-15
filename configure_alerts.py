@@ -24,6 +24,8 @@ def main():
         if check:
             status = json.load(response)
             print('Independent watchdog healthy: ' + str(status['healthy']))
+            if not status['healthy']:
+                raise SystemExit(2)
     print('Independent watchdog checked' if check else 'Independent notification configuration accepted; no credentials logged')
 
 if __name__ == '__main__':

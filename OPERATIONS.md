@@ -55,3 +55,11 @@ single-repository push cannot. Generated status documents are kept atomic during
 publication, and mutable metadata/status are loaded from current private main,
 independently of the immutable controller code pin. Full acceptance still requires
 the latest Backup ALL run and private coverage report to pass.
+
+Full reconciliation 38788853428 completed successfully on 2026-10-15 at 19:08 UTC:
+21/21 repositories, zero failed; marketplace coverage has zero export errors and
+34 saved binary object records. An independent watchdog subsequently identified
+two older repository-creation deliveries still awaiting receipt; these were
+replayed rather than manually marked complete. This is separate from Git ref
+coverage, which already matched. Check-only workflow must fail when health is
+false; HTTP 200 alone is not a healthy result.
