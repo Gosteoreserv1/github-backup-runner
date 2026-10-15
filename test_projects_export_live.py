@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import tempfile
 import types
+import traceback
 from preflight import request
 from run_backup import REVISION
 
@@ -41,6 +42,8 @@ def main():
 if __name__ == '__main__':
     try:
         raise SystemExit(main())
-    except Exception:
-        print('Live Projects component test failed; private details suppressed')
+    except Exception as error:
+        frame = traceback.extract_tb(error.__traceback__)[-1]
+        print('Live Projects component test exception: ' + type(error).__name__ +
+              '; function ' + frame.name + '; line ' + str(frame.lineno))
         raise SystemExit(1)
