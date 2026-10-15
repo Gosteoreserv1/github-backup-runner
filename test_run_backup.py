@@ -1,8 +1,11 @@
 import tempfile
 import unittest
+import io
+import urllib.error
+from unittest.mock import patch
 from pathlib import Path
 from types import SimpleNamespace
-from run_backup import configuration, execute, verify_archived_commit, REVISION
+from run_backup import configuration, execute, verify_archived_commit, REVISION, alert
 
 
 class RunnerTests(unittest.TestCase):
@@ -66,6 +69,24 @@ class RunnerTests(unittest.TestCase):
             return SimpleNamespace(returncode=code)
         self.assertEqual(execute(self.env, fake), 2)
         self.assertIn(['git', 'add', 'metadata', 'status'], calls)
+
+    def test_alert_sender_identifies_itself_and_attempts_both_channels(self):
+        env = dict(TELEGRAM_BOT_TOKEN='fake', TELEGRAM_CHAT_ID='1', RESEND_API_KEY='fake',
+                   BACKUP_ALERT_FROM='a@example.org', BACKUP_ALERT_EMAIL='b@example.org')
+        with patch('run_backup.urllib.request.urlopen', side_effect=[
+                io.BytesIO(b'{"ok":true}'), io.BytesIO(b'{"id":"mail"}')]) as mocked:
+            self.assertEqual(alert(env, 'Test'), {'configured': 2, 'failed': 0})
+            self.assertEqual(mocked.call_count, 2)
+            for call in mocked.call_args_list:
+                self.assertEqual(call.args[0].get_header('User-agent'), 'GOSTEO-backup-runner/1.0')
+
+    def test_one_channel_rejection_does_not_block_the_other(self):
+        env = dict(TELEGRAM_BOT_TOKEN='fake', TELEGRAM_CHAT_ID='1', RESEND_API_KEY='fake',
+                   BACKUP_ALERT_FROM='a@example.org', BACKUP_ALERT_EMAIL='b@example.org')
+        rejected = urllib.error.HTTPError('https://example.org', 403, 'denied', {}, None)
+        with patch('run_backup.urllib.request.urlopen', side_effect=[rejected, io.BytesIO(b'{"id":"mail"}')]) as mocked:
+            self.assertEqual(alert(env, 'Test'), {'configured': 2, 'failed': 1})
+            self.assertEqual(mocked.call_count, 2)
 
 
 if __name__ == '__main__':

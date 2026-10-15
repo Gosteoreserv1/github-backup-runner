@@ -9,6 +9,8 @@ import urllib.request
 import json
 import hmac
 import hashlib
+import time
+import urllib.error
 
 CONTROLLER = 'https://github.com/Gosteoreserv1/github-account-backup.git'
 REVISION = '264511eb089bb25ea43d98f5e029e80830ec77e0'
@@ -109,30 +111,41 @@ def receipt(env):
             raise RuntimeError('Journal callback rejected')
 
 
-def alert(env):
+def alert(env, message='GOSTEO backup failed or is incomplete. Check the private controller status.'):
     """Both channels are independent; no raw HTTP exceptions or URLs are logged."""
-    message = 'GOSTEO backup failed or is incomplete. Check the private controller status.'
     failures = 0
     destinations = []
     if env.get('TELEGRAM_BOT_TOKEN') and env.get('TELEGRAM_CHAT_ID'):
-        destinations.append(('https://api.telegram.org/bot' + env['TELEGRAM_BOT_TOKEN'] + '/sendMessage',
+        destinations.append(('telegram', 'https://api.telegram.org/bot' + env['TELEGRAM_BOT_TOKEN'] + '/sendMessage',
             {'chat_id': env['TELEGRAM_CHAT_ID'], 'text': message}, None, 'ok'))
     if all(env.get(k) for k in ('RESEND_API_KEY', 'BACKUP_ALERT_FROM', 'BACKUP_ALERT_EMAIL')):
-        destinations.append(('https://api.resend.com/emails', {'from': env['BACKUP_ALERT_FROM'],
+        destinations.append(('email', 'https://api.resend.com/emails', {'from': env['BACKUP_ALERT_FROM'],
             'to': [env['BACKUP_ALERT_EMAIL']], 'subject': 'GOSTEO backup alert', 'text': message},
             env['RESEND_API_KEY'], 'id'))
-    for url, payload, token, success_field in destinations:
-        try:
-            headers = {'Content-Type': 'application/json'}
-            if token:
-                headers['Authorization'] = 'Bearer ' + token
-            request = urllib.request.Request(url, json.dumps(payload).encode(), headers, method='POST')
-            with urllib.request.urlopen(request, timeout=20) as response:
-                if not json.load(response).get(success_field):
-                    failures += 1
-        except Exception:
+    for channel, url, payload, token, success_field in destinations:
+        delivered = False
+        for attempt in range(2):
+            try:
+                headers = {'Content-Type': 'application/json', 'User-Agent': 'GOSTEO-backup-runner/1.0'}
+                if token:
+                    headers['Authorization'] = 'Bearer ' + token
+                request = urllib.request.Request(url, json.dumps(payload).encode(), headers, method='POST')
+                with urllib.request.urlopen(request, timeout=20) as response:
+                    delivered = bool(json.load(response).get(success_field))
+                break
+            except urllib.error.HTTPError as error:
+                print(f'Notification {channel}: HTTP {error.code}')
+                if error.code != 429 and error.code < 500:
+                    break
+            except Exception:
+                print(f'Notification {channel}: transport error (details suppressed)')
+            if attempt == 0:
+                time.sleep(1)
+        if not delivered:
             failures += 1
+        print(f'Notification {channel}: ' + ('accepted' if delivered else 'failed'))
     print(f'Notification channels configured: {len(destinations)}; failed: {failures}')
+    return {'configured': len(destinations), 'failed': failures}
 
 
 if __name__ == '__main__':

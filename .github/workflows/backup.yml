@@ -1,4 +1,5 @@
 name: Private backup execution
+run-name: Backup ${{ inputs.repository || 'ALL' }}
 on:
   workflow_dispatch:
     inputs:
