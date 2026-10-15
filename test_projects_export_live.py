@@ -15,7 +15,13 @@ def main():
     exec(compile(base64.b64decode(source['content']), 'pinned_archive_metadata.py', 'exec'), module.__dict__)
     def api(token, method, path, body=None, **kwargs):
         if path == '/graphql':
-            return request('https://api.github.com/graphql', token, body)
+            response = request('https://api.github.com/graphql', token, body)
+            for error in response.get('errors') or []:
+                extension = error.get('extensions', {})
+                print('Safe GraphQL diagnostic: ' + str(error.get('type') or extension.get('code', 'unknown')))
+                if extension.get('typeName') and extension.get('fieldName'):
+                    print('Schema field: ' + str(extension['typeName']) + '.' + str(extension['fieldName']))
+            return response
         return {'name': 'gosteo-marketplace', 'has_discussions': False}
     with tempfile.TemporaryDirectory() as folder:
         result = module.export_archive('gosteo-marketplace', Path(folder), 'test', 'valeriykurs1992',
@@ -25,7 +31,10 @@ def main():
         print('Linked projects archived: ' + str(coverage['sections']['projects-v2.json'].get('count', 0)))
         print('Projects exporter errors: ' + str(len(result['errors'])))
         if result['errors']:
-            print('Projects component test failed; private error paths suppressed')
+            kinds = set()
+            for path in result['errors']:
+                kinds.add('item-fields' if '/item-fields/' in path else path.rsplit('/', 1)[-1])
+            print('Failed component kinds (no private IDs): ' + ', '.join(sorted(kinds)))
             return 1
     return 0
 
