@@ -13,7 +13,7 @@ import time
 import urllib.error
 
 CONTROLLER = 'https://github.com/Gosteoreserv1/github-account-backup.git'
-REVISION = '264511eb089bb25ea43d98f5e029e80830ec77e0'
+REVISION = '7343df61307ea736d460bffa323c777cdcb8c932'
 
 
 def configuration(env):

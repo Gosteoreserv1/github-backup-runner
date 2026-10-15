@@ -44,7 +44,9 @@ def main():
     errors = response.get('errors') or []
     if errors:
         types = sorted({str(error.get('type') or error.get('extensions', {}).get('code', 'unknown')) for error in errors})
-        print('Projects discovery failed; safe GraphQL categories: ' + ', '.join(types))
+        print('Repository-root lookup unavailable; safe categories: ' + ', '.join(types))
+        if not owner_errors:
+            print('Use verified account-catalog discovery with project repository associations')
         return 0 if not owner_errors else 1
     connection = response['data']['repository']['projectsV2']
     print('Projects discovery succeeded; project count on first page: ' + str(len(connection['nodes'])))
