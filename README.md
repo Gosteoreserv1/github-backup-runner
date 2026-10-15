@@ -1,6 +1,6 @@
 # GOSTEO GitHub backup runner
 
-## Current activation (2026-10-10)
+## Current activation (verified 2026-10-15)
 
 The runner is ENABLED. GitHub App webhooks now route through a persistent
 Cloudflare D1 outbox to backup.yml. Signed receipts require a matching event SHA
@@ -10,9 +10,13 @@ reconciled daily at 03:41 UTC / 06:41 Moscow. Independent health checks run ever
 30 minutes. Telegram/email test delivery is confirmed; alert configuration is
 encrypted at rest. Older private scheduled/event workflows are disabled, not deleted.
 
-Initial all-repository and destructive recovery acceptance is still in progress.
-Enabled automation is not proof of full coverage. Inspect private status and
-coverage.json. See OPERATIONS.md for exclusions, limitations and quota caveats.
+Full reconciliations 38788853428 and 38789090430 passed for 21/21 repositories.
+Independent watchdog 38794446946 returned healthy=true and confirmed recovery
+delivery states for Telegram and email. Earlier isolated force/delete/restore
+evidence is in OPERATIONS.md. Inspect private per-repository status and coverage.json;
+these results are not a promise of complete GitHub/account/site recovery. Secret
+values, databases/media, redacted Projects linkage and external service state have
+explicit exclusions. See OPERATIONS.md for limitations and quota caveats.
 
 ## Historical preparation notes (superseded by activation status above)
 
