@@ -63,3 +63,11 @@ two older repository-creation deliveries still awaiting receipt; these were
 replayed rather than manually marked complete. This is separate from Git ref
 coverage, which already matched. Check-only workflow must fail when health is
 false; HTTP 200 alone is not a healthy result.
+
+Final maintenance validation: full run 38789090430 also passed 21/21 with zero
+failures. Replays 38792663521 and 38794206970 completed both older creation
+deliveries. Independent check 38794446946 returned healthy=true on 2026-10-15
+19:30 UTC, automatically closed watchdog issue #12, and recorded successful
+recovery delivery states for both Telegram and email. Historical issue #13 was
+closed only after this evidence. Fresh deliveries may still be queued normally;
+busy retries are replayed by the 30-minute scheduler, not marked complete early.
