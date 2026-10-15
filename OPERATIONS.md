@@ -38,3 +38,20 @@ primary account. Personal Projects access needs a separate PROJECTS_TOKEN with
 read:project scope; do not replace read-only repository credentials with broad
 classic repo write access. Overall metadata acceptance remains incomplete until
 the owner supplies this credential and the exporter is verified with it.
+
+2026-10-15 maintenance: the actual Projects exporter passed live component run
+38788776535 using the separate read:project token. It archives all primary-owned
+boards in each metadata archive, including boards whose private repository links
+GitHub redacts. coverage.json records redacted link/content counts; this does NOT
+promise fully restorable Projects views, automations or private item linkage.
+An independent read-only audit found matching heads/tags/notes for 21/21 source
+repositories, and all 153 unique journal commit SHAs reachable in snapshots.
+This audit does not check LFS payload bytes or commits never captured in the journal.
+Telegram/email test run 38698272627 was accepted by both providers; provider
+acceptance is not proof that a message was read. Incident reminders repeat daily
+while unhealthy, with independent recovery delivery for each channel. A successful
+full manual reconciliation can supersede an older failed scheduled run; a green
+single-repository push cannot. Generated status documents are kept atomic during
+publication, and mutable metadata/status are loaded from current private main,
+independently of the immutable controller code pin. Full acceptance still requires
+the latest Backup ALL run and private coverage report to pass.
