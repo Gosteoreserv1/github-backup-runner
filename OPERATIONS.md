@@ -71,3 +71,11 @@ deliveries. Independent check 38794446946 returned healthy=true on 2026-10-15
 recovery delivery states for both Telegram and email. Historical issue #13 was
 closed only after this evidence. Fresh deliveries may still be queued normally;
 busy retries are replayed by the 30-minute scheduler, not marked complete early.
+
+Fresh dev push proof: run 38794835605 succeeded; primary and backup dev both
+resolve to 79c69f53f0dfd1ac439348c96e2427e181d943e6. Its signed snapshot receipt
+completed the remaining journal entry: 164 complete, zero pending/dispatched.
+The event ledger retained successful metadata timestamp 2026-10-15T190852Z
+while advancing Git backup timestamp to 2026-10-15T193333Z. Latest single-repo
+status is success=1, failed=0, total=1; full coverage evidence remains the
+separate successful 21-repository reconciliations above.
