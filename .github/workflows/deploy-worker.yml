@@ -1,0 +1,77 @@
+name: Deploy backup Worker
+run-name: Deploy backup Worker (${{ github.event_name }})
+
+# Автодеплой Cloudflare Worker (webhook-worker, код лежит в приватном github-account-backup) без чьего-либо компьютера.
+# Запускается здесь, в ПУБЛИЧНОМ репозитории: минуты Actions публичных репозиториев бесплатны, а в приватном
+# аккаунт упёрся в лимит (21.10.2026). Раз в 3 часа и вручную сравнивает хеш каталога webhook-worker с уже
+# выкаченным (ключ в KV Cloudflare) и выкатывает только при изменении.
+on:
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Выкатить, даже если код не менялся
+        type: boolean
+        default: false
+  schedule:
+    - cron: '23 */3 * * *'
+permissions:
+  contents: read
+concurrency:
+  group: deploy-backup-worker
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fetch Worker code from private repository
+        env:
+          BACKUP_TOKEN: ${{ secrets.BACKUP_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "$BACKUP_TOKEN"
+          git -c credential.helper= clone -q --depth 1 --branch main \
+            "https://x-access-token:${BACKUP_TOKEN}@github.com/Gosteoreserv1/github-account-backup.git" src
+          echo "TREE=$(git -C src rev-parse HEAD:webhook-worker)" >> "$GITHUB_ENV"
+      - name: Check whether deployment is needed
+        id: need
+        working-directory: src/webhook-worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo 'CLOUDFLARE_API_TOKEN is not set'; exit 1; }
+          npm install --no-audit --no-fund >/dev/null
+          NS=$(awk '/\[\[kv_namespaces\]\]/{f=1} f && /^id *=/{gsub(/[" ]/,"",$0); sub(/^id=/,"",$0); print; exit}' wrangler.toml)
+          test -n "$NS"
+          echo "NS=$NS" >> "$GITHUB_ENV"
+          LAST=$(npx wrangler kv key get WORKER_DEPLOYED_TREE --namespace-id "$NS" --remote 2>/dev/null || echo none)
+          if [ "$LAST" = "$TREE" ] && [ "$FORCE" != "true" ]; then
+            echo "Worker уже выкачен для $TREE — пропуск"
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Нужен деплой: выкачено «$LAST», в main «$TREE»"
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Tests
+        if: steps.need.outputs.deploy == 'true'
+        working-directory: src/webhook-worker
+        run: node --test test/*.test.js
+      - name: Deploy Worker
+        if: steps.need.outputs.deploy == 'true'
+        working-directory: src/webhook-worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          npx wrangler deploy
+          curl -fsS --retry 5 --retry-delay 5 https://github-backup-webhook.kurs19992.workers.dev/health
+          echo
+          npx wrangler kv key put WORKER_DEPLOYED_TREE "$TREE" --namespace-id "$NS" --remote
