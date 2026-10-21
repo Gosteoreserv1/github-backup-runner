@@ -34,8 +34,10 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$BACKUP_TOKEN"
-          git -c credential.helper= clone -q --depth 1 --branch main \
-            "https://x-access-token:${BACKUP_TOKEN}@github.com/Gosteoreserv1/github-account-backup.git" src
+          # В репозитории огромный архив метаданных — забираем только каталог Worker (sparse, без лишних блобов).
+          git -c credential.helper= clone -q --depth 1 --branch main --filter=blob:none --sparse             "https://x-access-token:${BACKUP_TOKEN}@github.com/Gosteoreserv1/github-account-backup.git" src
+          git -C src sparse-checkout set webhook-worker
+          test -f src/webhook-worker/wrangler.toml
           echo "TREE=$(git -C src rev-parse HEAD:webhook-worker)" >> "$GITHUB_ENV"
       - name: Check whether deployment is needed
         id: need
@@ -51,12 +53,13 @@ jobs:
           NS=$(awk '/\[\[kv_namespaces\]\]/{f=1} f && /^id *=/{gsub(/[" ]/,"",$0); sub(/^id=/,"",$0); print; exit}' wrangler.toml)
           test -n "$NS"
           echo "NS=$NS" >> "$GITHUB_ENV"
-          LAST=$(npx wrangler kv key get WORKER_DEPLOYED_TREE --namespace-id "$NS" --remote 2>/dev/null || echo none)
-          if [ "$LAST" = "$TREE" ] && [ "$FORCE" != "true" ]; then
+          OUT=$(npx wrangler kv key get WORKER_DEPLOYED_TREE --namespace-id "$NS" --remote 2>&1 || true)
+          if printf '%s
+' "$OUT" | grep -qx "$TREE" && [ "$FORCE" != "true" ]; then
             echo "Worker уже выкачен для $TREE — пропуск"
             echo "deploy=false" >> "$GITHUB_OUTPUT"
           else
-            echo "Нужен деплой: выкачено «$LAST», в main «$TREE»"
+            echo "Нужен деплой (в main хеш $TREE)"
             echo "deploy=true" >> "$GITHUB_OUTPUT"
           fi
       - name: Tests
