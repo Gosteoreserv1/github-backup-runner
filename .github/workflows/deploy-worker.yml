@@ -54,8 +54,7 @@ jobs:
           test -n "$NS"
           echo "NS=$NS" >> "$GITHUB_ENV"
           OUT=$(npx wrangler kv key get WORKER_DEPLOYED_TREE --namespace-id "$NS" --remote 2>&1 || true)
-          if printf '%s
-' "$OUT" | grep -qx "$TREE" && [ "$FORCE" != "true" ]; then
+          if echo "$OUT" | grep -qx "$TREE" && [ "$FORCE" != "true" ]; then
             echo "Worker уже выкачен для $TREE — пропуск"
             echo "deploy=false" >> "$GITHUB_OUTPUT"
           else
