@@ -34,8 +34,10 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$BACKUP_TOKEN"
-          git -c credential.helper= clone -q --depth 1 --branch main \
-            "https://x-access-token:${BACKUP_TOKEN}@github.com/Gosteoreserv1/github-account-backup.git" src
+          # В репозитории огромный архив метаданных — забираем только каталог Worker (sparse, без лишних блобов).
+          git -c credential.helper= clone -q --depth 1 --branch main --filter=blob:none --sparse             "https://x-access-token:${BACKUP_TOKEN}@github.com/Gosteoreserv1/github-account-backup.git" src
+          git -C src sparse-checkout set webhook-worker
+          test -f src/webhook-worker/wrangler.toml
           echo "TREE=$(git -C src rev-parse HEAD:webhook-worker)" >> "$GITHUB_ENV"
       - name: Check whether deployment is needed
         id: need
